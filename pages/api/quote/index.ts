@@ -1,7 +1,9 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 
-const BASE_URL = "https://bridge-swap.aarc.xyz/bridge-swap"; // base url for the cross-chain end point.
+// base url for the cross-chain end point.
+const BASE_URL = "https://bridge-swap.aarc.xyz/bridge-swap";
 
+// AARC API Key. Get it from here: https://dashboard.aarc.xyz/
 const AARC_API_KEY = process.env.AARC_API_KEY ? process.env.AARC_API_KEY : "";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
