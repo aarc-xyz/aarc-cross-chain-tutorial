@@ -81,10 +81,10 @@ const Home: NextPage = () => {
     }
   };
 
-  const fetchApprovalData = async () => {
+  const fetchRouteData = async () => {
     let response;
     try {
-      response = await fetch(`/api/approvalData`, {
+      response = await fetch(`/api/routeData`, {
         // Assuming your API route is '/api' based on the file name `pages/api/index.ts`
         method: "POST",
         headers: {
@@ -151,7 +151,7 @@ const Home: NextPage = () => {
 
   const swap = async () => {
     await fetchRoute().then(async () => {
-      await fetchApprovalData().then(async () => {
+      await fetchRouteData().then(async () => {
         await fetchApprovalTxData();
       });
     });
