@@ -13,9 +13,7 @@ const Home: NextPage = () => {
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState(""); // State to display the "To" amount
 
-  const [routeData, setRoute] = useState<any>(null);
   const [routeTxData, setRouteTxData] = useState<any>(null);
-  const [approvalData, setApprovalData] = useState<any>(null);
   const [approvalTxData, setApprovalTxData] = useState<any>(null);
 
   const chains = [
@@ -38,7 +36,8 @@ const Home: NextPage = () => {
     alert(`Swap ${fromAmount} ${fromToken} to ${toToken}`);
   };
 
-  const fetchRoute = async () => {
+  const fetchRoute = async (): Promise<any> => {
+    let data;
     try {
       // const params = new URLSearchParams({
       //   fromChainId: chainId?.toString() || "",
@@ -62,7 +61,6 @@ const Home: NextPage = () => {
       });
 
       const response = await fetch(`/api/quote?${params.toString()}`, {
-        // Assuming your API route is '/api' based on the file name `pages/api/index.ts`
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -73,55 +71,63 @@ const Home: NextPage = () => {
         throw new Error("Network response was not ok");
       }
 
-      const data = await response.json();
-      console.log("Route data:", data.route);
-      setRoute(data.route);
+      data = await response.json();
     } catch (error) {
       console.error("Failed to fetch the route:", error);
     }
+    return data.route;
   };
 
-  const fetchRouteData = async () => {
+  const fetchRouteData = async (
+    route: any
+  ): Promise<{
+    routeTxData: any;
+    approvalData: any;
+  }> => {
+    let data;
     let response;
+    let routeTxData;
+    let approvalData;
     try {
       response = await fetch(`/api/routeData`, {
-        // Assuming your API route is '/api' based on the file name `pages/api/index.ts`
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ route: routeData }),
+        body: JSON.stringify({ route: route }),
       });
 
       if (!response.ok) {
         throw new Error("Network response was not ok");
       }
       if (response != undefined) {
-        const data = await response.json();
-        const routeTxData = data.responseInJson.result;
+        data = await response.json();
 
-        console.log("Route transaction data:", routeTxData);
+        routeTxData = data.responseInJson.result;
         setRouteTxData(routeTxData);
 
-        const approvalData = data.responseInJson.result.approvalData;
-
-        console.log("Approval data:", approvalData);
-        setApprovalData(approvalData);
+        approvalData = data.responseInJson.result.approvalData;
       }
     } catch (error) {
       console.error("Failed to fetch the transaction data:", error);
     }
+    return {
+      routeTxData: routeTxData,
+      approvalData: approvalData,
+    };
   };
 
-  const fetchApprovalTxData = async () => {
+  const fetchApprovalTxData = async (res: any) => {
     let response;
+    let approvalTxData;
+    let data;
     try {
       const params = new URLSearchParams({
         chainId: "137",
-        owner: approvalData.owner,
-        allowanceTarget: approvalData.allowanceTarget,
-        tokenAddress: approvalData.approvalTokenAddress,
-        amount: approvalData.minimumApprovalAmount,
+        owner: res.owner,
+        allowanceTarget: res.allowanceTarget,
+        tokenAddress: res.approvalTokenAddress,
+        amount: res.minimumApprovalAmount,
       });
 
       response = await fetch(
@@ -140,9 +146,9 @@ const Home: NextPage = () => {
       }
 
       if (response != undefined) {
-        const data = await response.json();
-        console.log("Approval transaction data:", data.approvalTxData);
-        setApprovalTxData(data.approvalTxData);
+        data = await response.json();
+        approvalTxData = data.approvalTxData;
+        setApprovalTxData(approvalTxData);
       }
     } catch (error) {
       console.error("Failed to fetch the approval transaction data:", error);
@@ -150,11 +156,12 @@ const Home: NextPage = () => {
   };
 
   const swap = async () => {
-    await fetchRoute().then(async () => {
-      await fetchRouteData().then(async () => {
-        await fetchApprovalTxData();
+    await fetchRoute().then(async (route) => {
+      await fetchRouteData(route).then(async (response) => {
+        await fetchApprovalTxData(response.approvalData);
       });
     });
+    console.log("Data Fetched.. Move to next step");
   };
 
   const sendApprovalTx = () => {
