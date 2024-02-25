@@ -1,6 +1,6 @@
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import type { NextPage } from "next";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import styles from "../styles/Home.module.css";
 import { useSendTransaction, useAccount } from "wagmi";
 const Home: NextPage = () => {
@@ -8,57 +8,59 @@ const Home: NextPage = () => {
   const { address, chainId } = useAccount();
 
   const [fromToken, setFromToken] = useState("");
-  const [toChain, setToChain] = useState("");
+  const [toChain, setToChain] = useState(0);
   const [toToken, setToToken] = useState("");
   const [fromAmount, setFromAmount] = useState("");
-  const [toAmount, setToAmount] = useState(""); // State to display the "To" amount
+  const [toAmount, setToAmount] = useState("");
 
   const [routeTxData, setRouteTxData] = useState<any>(null);
-  const [approvalTxData, setApprovalTxData] = useState<any>(null);
+  const [apporvalTxData, setApprovalTxData] = useState<any>(null);
 
   const chains = [
-    { id: 1, name: "Ethereum Mainnet" },
     { id: 56, name: "Binance Smart Chain" },
     { id: 137, name: "Polygon" },
   ];
 
   // Example token list
   const tokens = [
-    { symbol: "USDC", name: "USD Coin" },
-    // Add more tokens as needed
+    {
+      symbol: "USDC",
+      name: "USDC",
+      address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+      chainId: 137,
+    },
+    {
+      symbol: "USDT",
+      name: "USDT",
+      address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      chainId: 56,
+    },
   ];
-
-  useEffect(() => {}, []);
-
-  const handleSwap = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    // Placeholder for swap logic
-    alert(`Swap ${fromAmount} ${fromToken} to ${toToken}`);
-  };
 
   const fetchRoute = async (): Promise<any> => {
     let data;
     try {
-      // const params = new URLSearchParams({
-      //   fromChainId: chainId?.toString() || "",
-      //   toChainId: toChain,
-      //   fromTokenAddress: fromToken,
-      //   toTokenAddress: toToken,
-      //   fromAmount: fromAmount,
-      //   userAddress: address?.toString() || "",
-      //   recipient: address?.toString() || "",
-      //   routeType: "Value",
-      // });
       const params = new URLSearchParams({
-        fromChainId: "137",
-        toChainId: "56",
-        fromTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
-        toTokenAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
-        fromAmount: "100000000",
-        userAddress: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
-        recipient: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
+        fromChainId: chainId?.toString() || "",
+        toChainId: toChain.toString() || "",
+        fromTokenAddress: fromToken,
+        toTokenAddress: toToken,
+        fromAmount: fromAmount,
+        userAddress: address?.toString() || "",
+        recipient: address?.toString() || "",
         routeType: "Value",
       });
+
+      // const params = new URLSearchParams({
+      //   fromChainId: "137", //MATIC
+      //   toChainId: "56", //BSC
+      //   fromTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT
+      //   toTokenAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // USDC
+      //   fromAmount: "1000000",
+      //   userAddress: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
+      //   recipient: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
+      //   routeType: "Value",
+      // });
 
       const response = await fetch(`/api/quote?${params.toString()}`, {
         method: "GET",
@@ -75,7 +77,12 @@ const Home: NextPage = () => {
     } catch (error) {
       console.error("Failed to fetch the route:", error);
     }
-    return data.route;
+    const route = data.route;
+    console.log("Route Data:", route);
+    console.log("Output Value in USD:", route.outputValueInUsd);
+    setToAmount(route.outputValueInUsd);
+
+    return route;
   };
 
   const fetchRouteData = async (
@@ -117,13 +124,13 @@ const Home: NextPage = () => {
     };
   };
 
-  const fetchApprovalTxData = async (res: any) => {
+  const approvalTx = async (res: any): Promise<any> => {
     let response;
-    let approvalTxData;
+    let s_approvalTxData;
     let data;
     try {
       const params = new URLSearchParams({
-        chainId: "137",
+        chainId: chainId?.toString() || "",
         owner: res.owner,
         allowanceTarget: res.allowanceTarget,
         tokenAddress: res.approvalTokenAddress,
@@ -133,7 +140,6 @@ const Home: NextPage = () => {
       response = await fetch(
         `/api/generateApprovalTxData?${params.toString()}`,
         {
-          // Assuming your API route is '/api' based on the file name `pages/api/index.ts`
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -147,28 +153,30 @@ const Home: NextPage = () => {
 
       if (response != undefined) {
         data = await response.json();
-        approvalTxData = data.approvalTxData;
-        setApprovalTxData(approvalTxData);
+        s_approvalTxData = data.approvalTxData;
       }
     } catch (error) {
       console.error("Failed to fetch the approval transaction data:", error);
     }
+    setApprovalTxData(s_approvalTxData);
+
+    return s_approvalTxData;
   };
 
   const swap = async () => {
     await fetchRoute().then(async (route) => {
       await fetchRouteData(route).then(async (response) => {
-        await fetchApprovalTxData(response.approvalData);
+        await approvalTx(response.approvalData);
       });
     });
     console.log("Data Fetched.. Move to next step");
   };
 
   const sendApprovalTx = () => {
-    console.log("Approval transaction data:", approvalTxData);
+    console.log("Sending Approval Tx Data");
     sendTransaction({
-      to: approvalTxData.to,
-      data: approvalTxData.data,
+      to: apporvalTxData.to,
+      data: apporvalTxData.data,
     });
   };
 
@@ -179,53 +187,51 @@ const Home: NextPage = () => {
     });
   };
 
-  // Placeholder for a function to calculate the "To" amount based on the "From" amount
-  // In a real application, you would replace this with actual logic, possibly fetching rates from an API
-  const calculateToAmount = (fromAmount: string) => {
-    // Simple calculation, replace with real conversion rate
-    const rate = 1; // Placeholder rate
-    setToAmount((parseFloat(fromAmount) * rate).toString());
-  };
-
-  // Update this function to also calculate the "To" amount whenever the "From" amount changes
-  const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const amountValue = e.target.value;
-    setFromAmount(amountValue);
-    calculateToAmount(amountValue);
-  };
-
   return (
     <div className={styles.container}>
       <main className={styles.main}>
         <ConnectButton />
-        <form onSubmit={handleSwap} className={styles.swapForm}>
+        <form className={styles.swapForm}>
           <div className={styles.swapRow}>
             <select
               value={fromToken}
-              onChange={(e) => setFromToken(e.target.value)}
+              onChange={(e) => {
+                tokens.map((token) => {
+                  if (token.symbol == e.target.value) {
+                    setFromToken(token.address);
+                  }
+                });
+              }}
               required
             >
               <option value="">Select From Token</option>
-              {tokens.map((token) => (
-                <option key={token.symbol} value={token.symbol}>
-                  {token.name}
-                </option>
-              ))}
+              {tokens.map((token) => {
+                if (token.chainId == chainId) {
+                  return (
+                    <option key={token.symbol} value={token.symbol}>
+                      {token.name}
+                    </option>
+                  );
+                }
+              })}
             </select>
           </div>
           <div className={styles.swapRow}>
             <input
               type="number"
               value={fromAmount}
-              onChange={handleFromAmountChange}
+              onChange={(e) => {
+                setFromAmount((parseInt(e.target.value) * 1000000).toString());
+              }}
               placeholder="From Amount"
               required
             />
           </div>
           <div className={styles.swapRow}>
             <select
-              value={toChain}
-              onChange={(e) => setToChain(e.target.value)}
+              onChange={(e) => {
+                setToChain(parseInt(e.target.value));
+              }}
               required
             >
               <option value="">Select Destination Chain</option>
@@ -239,17 +245,36 @@ const Home: NextPage = () => {
           <div className={styles.swapRow}>
             <select
               value={toToken}
-              onChange={(e) => setToToken(e.target.value)}
+              onChange={(e) => {
+                tokens.map((token) => {
+                  if (token.symbol == e.target.value) {
+                    setToToken(token.address);
+                  }
+                });
+              }}
               required
             >
               <option value="">Select To Token</option>
-              {tokens.map((token) => (
-                <option key={token.symbol} value={token.symbol}>
-                  {token.name}
-                </option>
-              ))}
+              {tokens.map((token) => {
+                if (token.chainId == toChain) {
+                  return (
+                    <option key={token.symbol} value={token.symbol}>
+                      {token.name}
+                    </option>
+                  );
+                }
+              })}
             </select>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              swap();
+            }}
+            className={styles.swapButton}
+          >
+            Fetch Route
+          </button>
           <div className={styles.swapRow}>
             {/* Display the calculated "To" amount. This field is read-only. */}
             <input
@@ -259,14 +284,11 @@ const Home: NextPage = () => {
               placeholder="To Amount (Estimated)"
             />
           </div>
-          <button type="button" onClick={swap} className={styles.swapButton}>
-            Fetch Route
-          </button>
         </form>
         <button
           type="button"
           onClick={sendApprovalTx}
-          className={styles.swapButton}
+          className={styles.swapButton + " " + styles.approvalButton}
         >
           Send Approval Tx
         </button>

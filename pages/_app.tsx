@@ -7,9 +7,11 @@ import { WagmiProvider } from "wagmi";
 import { polygon } from "wagmi/chains";
 import { getDefaultConfig, RainbowKitProvider } from "@rainbow-me/rainbowkit";
 
+const WALLET_CONNECT_KEY = "WALLET_CONNECT_API_KEY";
+
 const config = getDefaultConfig({
-  appName: "RainbowKit App",
-  projectId: "YOUR_PROJECT_ID",
+  appName: "Aarc Cross-Chain API",
+  projectId: WALLET_CONNECT_KEY,
   chains: [polygon],
   ssr: true,
 });
