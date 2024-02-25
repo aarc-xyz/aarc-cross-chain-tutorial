@@ -51,17 +51,6 @@ const Home: NextPage = () => {
         routeType: "Value",
       });
 
-      // const params = new URLSearchParams({
-      //   fromChainId: "137", //MATIC
-      //   toChainId: "56", //BSC
-      //   fromTokenAddress: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // USDT
-      //   toTokenAddress: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // USDC
-      //   fromAmount: "1000000",
-      //   userAddress: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
-      //   recipient: "0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE",
-      //   routeType: "Value",
-      // });
-
       const response = await fetch(`/api/quote?${params.toString()}`, {
         method: "GET",
         headers: {
@@ -78,8 +67,6 @@ const Home: NextPage = () => {
       console.error("Failed to fetch the route:", error);
     }
     const route = data.route;
-    console.log("Route Data:", route);
-    console.log("Output Value in USD:", route.outputValueInUsd);
     setToAmount(route.outputValueInUsd);
 
     return route;
